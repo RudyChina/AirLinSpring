@@ -6,8 +6,10 @@ import com.hut.spring.annotation.ComponentScan;
 import com.hut.spring.annotation.Scope;
 
 import java.io.File;
+import java.io.UnsupportedEncodingException;
 import java.lang.annotation.Annotation;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,10 +41,16 @@ public class AirLinApplicationContext {
             }
             //当前操作系统的文件分隔符
             String fileSeparator = System.getProperty("file.separator");
-            scanPackagePath = scanPackagePath.replaceAll("\\.",fileSeparator);
+            scanPackagePath = scanPackagePath.replace(".",fileSeparator);
             ClassLoader appClassLoader = appConfigClass.getClassLoader();
             URL resource = appClassLoader.getResource(scanPackagePath);
-            File file = new File(resource.getFile());
+            File file = null;
+            try {
+                file = new File(URLDecoder.decode(resource.getFile(),"utf-8"));//utf-8对URL编码
+            } catch (UnsupportedEncodingException e) {
+                System.out.println("encoding URL error,please check your encoding type");
+                e.printStackTrace();
+            }
             loopResolveClass(file,fileSeparator,appClassLoader,beanClasses);
             System.out.println(beanClasses);
         }else {
@@ -79,7 +87,7 @@ public class AirLinApplicationContext {
                     if (f.getName().endsWith(".class")) {
                         String fileAbsolutePath = f.getAbsolutePath();
                         String classPath = fileAbsolutePath.substring(fileAbsolutePath.indexOf("com"), fileAbsolutePath.indexOf(".class"));
-                        classPath = classPath.replaceAll(fileSeparator, "\\.");
+                        classPath = classPath.replace(fileSeparator, ".");
                         Class<?> clazz = null;
                         try {
                             clazz = appClassLoader.loadClass(classPath);
