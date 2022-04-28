@@ -1,6 +1,8 @@
 package com.hut.service;
 
+import com.hut.spring.annotation.Autowired;
 import com.hut.spring.annotation.Component;
+import com.hut.spring.annotation.Scope;
 
 /**
  * @Description: 测试Bean对象
@@ -8,7 +10,11 @@ import com.hut.spring.annotation.Component;
  * @date: 2022-04-26
  */
 @Component
+@Scope
 public class UserService {
+
+    @Autowired
+    private PowerService powerService;
 
     public void login() {
         System.out.println("登陆了啊！！！！");
