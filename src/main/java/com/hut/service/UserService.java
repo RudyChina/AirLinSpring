@@ -14,9 +14,11 @@ import com.hut.spring.annotation.Scope;
 public class UserService {
 
     @Autowired
-    private PowerService powerService;
+    public PowerService powerService;
 
     public void login() {
         System.out.println("登陆了啊！！！！");
     }
+
+
 }

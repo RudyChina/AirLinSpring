@@ -1,13 +1,14 @@
 package com.hut.spring;
 
 import cn.hutool.core.util.StrUtil;
+import com.hut.spring.annotation.Autowired;
 import com.hut.spring.annotation.Component;
 import com.hut.spring.annotation.ComponentScan;
 import com.hut.spring.annotation.Scope;
 
 import java.io.File;
 import java.io.UnsupportedEncodingException;
-import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.ArrayList;
@@ -65,6 +66,9 @@ public class AirLinApplicationContext {
             }else{
                 //单例Bean，从singleTonBeanPool单例池中获取
                 Object singleTonBean = singleTonBeanPool.get(beanName);
+                if (singleTonBean == null) {
+                    singleTonBean = instanceBean(beanDefinition.getBeanType());
+                }
                 return singleTonBean;
             }
         }else{
@@ -171,6 +175,15 @@ public class AirLinApplicationContext {
         Object bean = null;
         try {
             bean = beanClass.newInstance();
+            //是否存在依赖注入
+            Field[] fields = beanClass.getFields();
+            for (Field field : fields) {
+                String fieldName = field.getName();
+                if (field.isAnnotationPresent(Autowired.class)) {
+                    field.setAccessible(true);
+                    field.set(bean,getBean(fieldName));
+                }
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -18,12 +18,10 @@ public class SpringTest {
         AirLinApplicationContext applicationContext = new AirLinApplicationContext(AppConfig.class);
 
         UserService userService = (UserService) applicationContext.getBean("userService");
-        UserService userService2 = (UserService) applicationContext.getBean("userService");
-        UserService userService3 = (UserService) applicationContext.getBean("userService");
+        userService.powerService.checkPower();
+/*
+        System.out.println(userService);*/
 
-        System.out.println(userService);
-        System.out.println(userService2);
-        System.out.println(userService3);
-        //userService.login();
+
     }
 }
