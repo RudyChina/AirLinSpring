@@ -1,5 +1,7 @@
 package com.hut.service;
 
+import com.hut.spring.BeanNameAware;
+import com.hut.spring.InitializingBean;
 import com.hut.spring.annotation.Autowired;
 import com.hut.spring.annotation.Component;
 import com.hut.spring.annotation.Scope;
@@ -11,14 +13,27 @@ import com.hut.spring.annotation.Scope;
  */
 @Component
 @Scope
-public class UserService {
+public class UserService implements UserServiceInterface, InitializingBean, BeanNameAware {
 
     @Autowired
-    public PowerService powerService;
+    private PowerService powerService;
 
+    @Override
     public void login() {
         System.out.println("登陆了啊！！！！");
     }
 
+    public void userLogin(){
+      powerService.checkPower();
+    }
 
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        System.out.println("属性赋值完毕了，初始化了，afterPropertiesSetting.........................");
+    }
+
+    @Override
+    public void setBeanName(String name) {
+        System.out.println("beanNameAware回调已执行..........入参，name:"+name);
+    }
 }

@@ -1,5 +1,6 @@
 package com.test;
 
+import com.hut.service.UserServiceInterface;
 import com.hut.spring.AirLinApplicationContext;
 import com.hut.spring.AppConfig;
 import com.hut.service.UserService;
@@ -17,8 +18,8 @@ public class SpringTest {
     public static void main(String[] args) {
         AirLinApplicationContext applicationContext = new AirLinApplicationContext(AppConfig.class);
 
-        UserService userService = (UserService) applicationContext.getBean("userService");
-        userService.powerService.checkPower();
+        UserServiceInterface userService = (UserServiceInterface) applicationContext.getBean("userService");
+        userService.login();
 /*
         System.out.println(userService);*/
 

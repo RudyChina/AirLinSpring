@@ -9,9 +9,11 @@ import com.hut.spring.annotation.Scope;
 import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -29,6 +31,8 @@ public class AirLinApplicationContext {
     private ConcurrentHashMap<String,BeanDefinition> beanDefinitionMap = new ConcurrentHashMap<>();
     //单例池
     private ConcurrentHashMap<String, Object> singleTonBeanPool = new ConcurrentHashMap<>();
+    //BeanPostProcessor实现类缓存
+    private LinkedList<BeanPostProcessor> postProcessorPool = new LinkedList<>();
 
     public AirLinApplicationContext(Class appConfigClass) {
         this.appConfigClass = appConfigClass;
@@ -37,7 +41,7 @@ public class AirLinApplicationContext {
         //2.初始化Bean,缓存至单例池
         beanDefinitionMap.forEach((beanName,beanDefinition)->{
             Class beanClass = beanDefinition.getBeanType();
-            Object bean = instanceBean(beanClass);
+            Object bean = instanceBean(beanClass,beanName);
             if (bean == null) {
                 throw new RuntimeException("reflect create Bean error");
             }
@@ -58,7 +62,7 @@ public class AirLinApplicationContext {
             ScopeEnum scope = beanDefinition.getScope();
             if (ScopeEnum.prototype.equals(scope)) {
                 //原型Bean，重新创建bean返回
-                Object prototypeBean = instanceBean(beanDefinition.getBeanType());
+                Object prototypeBean = instanceBean(beanDefinition.getBeanType(),beanName);
                 if (prototypeBean == null) {
                     throw new RuntimeException("instance prototype bean error");
                 }
@@ -67,7 +71,8 @@ public class AirLinApplicationContext {
                 //单例Bean，从singleTonBeanPool单例池中获取
                 Object singleTonBean = singleTonBeanPool.get(beanName);
                 if (singleTonBean == null) {
-                    singleTonBean = instanceBean(beanDefinition.getBeanType());
+                    singleTonBean = instanceBean(beanDefinition.getBeanType(),beanName);
+                    singleTonBeanPool.put(beanName, singleTonBean);
                 }
                 return singleTonBean;
             }
@@ -105,7 +110,7 @@ public class AirLinApplicationContext {
                 e.printStackTrace();
             }
             loopResolveClass(file,fileSeparator,appClassLoader,beanClasses);
-            System.out.println(beanClasses);
+            //System.out.println(beanClasses);
         }else {
             throw new RuntimeException("No annotation called ComponentScan Configured,Please check class named AppConfig");
         }
@@ -154,10 +159,23 @@ public class AirLinApplicationContext {
                         try {
                             //通过类加载器获取到Class字节码对象
                             clazz = appClassLoader.loadClass(classPath);
+                            //判断是否实现BeanPostProcessor
+                            if (BeanPostProcessor.class.isAssignableFrom(clazz)){
+                                //创建实例，存至postProcessorPool池中
+                                try {
+                                    BeanPostProcessor postProcessor = (BeanPostProcessor)clazz.getConstructor().newInstance();
+                                    postProcessorPool.add(postProcessor);
+                                } catch (Exception e) {
+                                    System.out.println("reflect init BeanPostProcessor failed");
+                                    e.printStackTrace();
+                                }
+                            }
                         } catch (ClassNotFoundException e) {
                             e.printStackTrace();
                         }
-                        beanClasses.add(clazz);
+                        if (clazz.isAnnotationPresent(Component.class)) {
+                            beanClasses.add(clazz);
+                        }
                     }else{
                         System.out.println("not class file,resolve skip");
                     }
@@ -168,16 +186,17 @@ public class AirLinApplicationContext {
 
 
     /**
-     * 反射创建Bean
+     * 反射创建Bean,以及依赖注入判断
      * @param beanClass
      * @return
      */
-    private Object instanceBean(Class beanClass) {
+    private Object instanceBean(Class beanClass,String beanName) {
         Object bean = null;
         try {
+            //bean实例化
             bean = beanClass.newInstance();
             //是否存在依赖注入
-            Field[] fields = beanClass.getFields();
+            Field[] fields = beanClass.getDeclaredFields();
             for (Field field : fields) {
                 String fieldName = field.getName();
                 if (field.isAnnotationPresent(Autowired.class)) {
@@ -185,6 +204,31 @@ public class AirLinApplicationContext {
                     field.set(bean,getBean(fieldName));
                 }
             }
+            //执行beforePostProcessor（初始化前执行）
+            for (BeanPostProcessor after : postProcessorPool) {
+                try {
+                    bean = after.postProcessorBeforeInitialization(bean, beanName);
+                } catch (Exception exception) {
+                    System.out.println("invoke beforePostProcessor error,class:"+after.getClass().getName());
+                    exception.printStackTrace();
+                }
+            }
+            //判断是否实现了InitializingBean
+            if (bean instanceof InitializingBean) {
+                InitializingBean initObj = (InitializingBean)bean;
+                //执行afterPropertiesSet
+                initObj.afterPropertiesSet();
+            }
+            //执行afterPostProcessor（初始化后执行）
+            for (BeanPostProcessor after : postProcessorPool) {
+                try {
+                    bean = after.postProcessorAfterInitialization(bean, beanName);
+                } catch (Exception exception) {
+                    System.out.println("invoke afterProcessor error,class:"+after.getClass().getName());
+                    exception.printStackTrace();
+                }
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
