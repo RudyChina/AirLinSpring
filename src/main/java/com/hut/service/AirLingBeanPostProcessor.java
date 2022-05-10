@@ -1,5 +1,6 @@
 package com.hut.service;
 
+import cn.hutool.core.util.StrUtil;
 import com.hut.spring.BeanPostProcessor;
 import com.hut.spring.annotation.Component;
 
@@ -24,15 +25,7 @@ public class AirLingBeanPostProcessor implements BeanPostProcessor {
      */
     @Override
     public Object postProcessorBeforeInitialization(Object bean, String beanName) throws Exception {
-        //jdk动态代理
-        Object proxyBean = Proxy.newProxyInstance(bean.getClass().getClassLoader(), bean.getClass().getInterfaces(), (proxy, method, args) -> {
-            System.out.println("before init 前置切面 invoked");
-            //目标方法执行
-            method.invoke(bean,args);
-            System.out.println("before init 后置切面 invoked");
-            return proxy;
-        });
-        return proxyBean;
+        return bean;
     }
 
     /**
@@ -44,14 +37,22 @@ public class AirLingBeanPostProcessor implements BeanPostProcessor {
      */
     @Override
     public Object postProcessorAfterInitialization(Object bean, String beanName) throws Exception {
-        //jdk动态代理
-        Object proxyBean = Proxy.newProxyInstance(bean.getClass().getClassLoader(), bean.getClass().getInterfaces(), (proxy, method, args) -> {
-            System.out.println("after init 前置切面 invoked");
-            //目标方法执行
-            method.invoke(bean,args);
-            System.out.println("after init 后置切面 invoked");
-            return proxy;
-        });
-        return proxyBean;
+        if (StrUtil.equals("userService", beanName)) {
+            System.out.println(beanName);
+            //jdk动态代理
+            Object proxyBean = Proxy.newProxyInstance(bean.getClass().getClassLoader(), bean.getClass().getInterfaces(), new InvocationHandler() {
+                @Override
+                public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                    System.out.println(method.getName()+" ==after init 切面逻辑");
+                    //目标方法执行
+                    return method.invoke(bean, args);
+                }
+            });
+            System.out.println("------------after init method invoke----------");
+            return proxyBean;
+        }
+        //System.out.println(beanName);
+
+        return bean;
     }
 }

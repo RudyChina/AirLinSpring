@@ -3,7 +3,6 @@ package com.test;
 import com.hut.service.UserServiceInterface;
 import com.hut.spring.AirLinApplicationContext;
 import com.hut.spring.AppConfig;
-import com.hut.service.UserService;
 
 /**
  * @Description: 测试spring启动类
@@ -19,7 +18,8 @@ public class SpringTest {
         AirLinApplicationContext applicationContext = new AirLinApplicationContext(AppConfig.class);
 
         UserServiceInterface userService = (UserServiceInterface) applicationContext.getBean("userService");
-        userService.login();
+        /*userService.login();*/
+        userService.userLogin();
 /*
         System.out.println(userService);*/
 

@@ -205,11 +205,11 @@ public class AirLinApplicationContext {
                 }
             }
             //执行beforePostProcessor（初始化前执行）
-            for (BeanPostProcessor after : postProcessorPool) {
+            for (BeanPostProcessor before : postProcessorPool) {
                 try {
-                    bean = after.postProcessorBeforeInitialization(bean, beanName);
+                    bean = before.postProcessorBeforeInitialization(bean, beanName);
                 } catch (Exception exception) {
-                    System.out.println("invoke beforePostProcessor error,class:"+after.getClass().getName());
+                    System.out.println("invoke beforePostProcessor error,class:"+before.getClass().getName());
                     exception.printStackTrace();
                 }
             }
@@ -223,6 +223,7 @@ public class AirLinApplicationContext {
             for (BeanPostProcessor after : postProcessorPool) {
                 try {
                     bean = after.postProcessorAfterInitialization(bean, beanName);
+
                 } catch (Exception exception) {
                     System.out.println("invoke afterProcessor error,class:"+after.getClass().getName());
                     exception.printStackTrace();

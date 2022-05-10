@@ -22,7 +22,7 @@ public class UserService implements UserServiceInterface, InitializingBean, Bean
     public void login() {
         System.out.println("登陆了啊！！！！");
     }
-
+    @Override
     public void userLogin(){
       powerService.checkPower();
     }
@@ -36,4 +36,6 @@ public class UserService implements UserServiceInterface, InitializingBean, Bean
     public void setBeanName(String name) {
         System.out.println("beanNameAware回调已执行..........入参，name:"+name);
     }
+
+
 }
